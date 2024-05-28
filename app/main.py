@@ -3,13 +3,21 @@ from datetime import datetime
 import uvicorn
 from fastapi import FastAPI
 
-from models.models import User, Feedback
+from models.models import User, Feedback, UserCreate
 
 
 app = FastAPI(title='MyFukingApp')
 
 fake_db = []
 
+
+@app.post('/create_user')
+def create_user(name:UserCreate,
+                email:UserCreate,
+                age:UserCreate,
+                is_subscribed: UserCreate):
+    return
+    
 
 @app.post('/feedback')
 def send_msg(usr: Feedback):
