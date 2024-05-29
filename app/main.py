@@ -1,33 +1,41 @@
 import uvicorn
 from fastapi import FastAPI, Cookie, Response
-
+from fastapi.responses import JSONResponse, HTMLResponse
+import uuid
 
 from datetime import datetime
 from random import randrange
 from models.models import User, Feedback, UserCreate, Product
-from app.db import sample_products
+from db import sample_products
 
 app = FastAPI(title='MyFukingApp')
-fake_db = [{'username': 'Anna', 'password': 'qwerty', 'session_token': None},
-           {'username': 'Helga', 'password': 'qwerty', 'session_token': None}]
+
+users = {'Kenny': {'password': 'qwerty', 'token': None},
+         'Abrams': {'password': 'ytrewq', 'token': None}}
+
+
+@app.post("/login/")
+async def login(usr: User, resp: Response):
+    if usr.username in users:
+        if usr.password == users[usr.username]['password']:
+            users[usr.username]['token'] = str(hash(usr.password)).replace('-','')
+            resp.set_cookie(key='session_token', value=users[usr.username]['token'])
+            # resp.status_code = HTTP_202_ACCEPTED
+            return {'result': f'autorization success, token:{users[usr.username]['token']}'}
+        # resp.status_code = HTTP_403_FORBIDDEN
+        return {'result': f'Password is wrong'}
+    # resp.status_code = HTTP_404_NOT_FOUNDNOT
+    return {'result': f'User {usr.username} not found'}
 
 
 @app.get('/user')
-def get_auth(session_token: str | None = Cookie(default=None)):
-    return {"session_token":session_token}
+async def user(token_id: str, resp: Response):
+    for name,v in users.items():
+        # print(token_id,[_ for _ in v.values()])
+        if str(token_id) in [_ for _ in v.values()]:
+            return name,v
 
-
-@app.post('/login')
-def auth(username:User,passwd:User,response:Response):
-    db = fake_db[0]
-    if username in db.keys() and db[username]==passwd:
-
-        session_token= str(randrange(10000000,99999999))
-        response.set_cookie(key = "session_token",value=session_token['session_token'])
-
-        # return f'session_token: {response.headers.get('set-cookie').split(';')[0].split('=')[1]}'
-        return {**session_token}
-
+    return {'result': 'Have not permissions'}
 
 
 # @app.get('/products/search/')
@@ -111,14 +119,14 @@ def auth(username:User,passwd:User,response:Response):
 
 
 
-@app.get('/')
-def read_root():
-    return {"message":"hello, World!"}
+# @app.get('/')
+# def read_root():
+#     return {"message":"hello, World!"}
 
 
-@app.get("/custom")
-def read_custom_message():
-    return {"message": "This is a custom message!"}
+# @app.get("/custom")
+# def read_custom_message():
+#     return {"message": "This is a custom message!"}
 
 
 

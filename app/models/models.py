@@ -21,9 +21,9 @@ class Feedback(BaseModel):
 
 
 class User(BaseModel):
-    name: str
+    username: str
     password: str
-
+    session_token: None
 
 # class User(BaseModel):
 #     name: str
