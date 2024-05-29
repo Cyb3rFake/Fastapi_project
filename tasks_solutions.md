@@ -1,4 +1,5 @@
-# 2.2
+# Task 2.2
+## Hard
 ### Задание по программированию повышенной сложности:
 Ваша задача состоит в том, чтобы расширить существующее приложение FastAPI, добавив новую конечную точку POST, которая принимает данные JSON, представляющие пользователя, и возвращает те же данные с дополнительным полем, указывающим, является ли пользователь взрослым или нет.
 
@@ -30,9 +31,8 @@
 }
 
 
-# Solutions
-
-### 1
+### Solutions
+#### 1
 ```python
 @app.post("/user")
 async def show_user(usr: User_age):
@@ -40,7 +40,7 @@ async def show_user(usr: User_age):
             "age": usr.age,
             "is_adult": usr.age>=18}
 ```
-### 2
+#### 2
 ```python
 @app.post("/{User}")
 def run(user: User):
@@ -48,7 +48,7 @@ def run(user: User):
     result["is_adult"] = user.age > 17
     return result
 ```
-### 3
+#### 3
 ```python
 @app.post("/{User}")
 def run(user: User):
@@ -57,7 +57,7 @@ def run(user: User):
     result["is_adult"] = user.age > 17
     return result
 ```
-### 4
+#### 4
 ```python
 @app.post("/user")
 async def add_user(user: User):
@@ -65,7 +65,7 @@ async def add_user(user: User):
     return {**user.model_dump(), "is_adult": is_adult}
 
 ```
-### 5
+#### 5
 ```python
 @app.post("/user")
 async def return_Age(user: User):
@@ -74,8 +74,8 @@ async def return_Age(user: User):
 
 ```
 ***
-# 2.3
-
+# Task 2.3
+## Easy
 ### Задание по программированию:
 Расширьте существующее приложение FastAPI, создав конечную точку POST, которая позволяет пользователям отправлять отзывы. Конечная точка должна принимать данные JSON, содержащие имя пользователя и сообщение обратной связи.
 
@@ -104,7 +104,7 @@ async def return_Age(user: User):
 Пожалуйста, протестируйте свою реализацию с помощью таких инструментов, как "curl", Postman или любой другой клиент API, чтобы отправить отзыв и проверить ответ
 
 ### Solutions
-## 1 C записью в json
+#### 1 C записью в json
 ```python
 from fastapi import FastAPI
 from models import Feedback
@@ -135,7 +135,7 @@ async def user_feedback(msg: Feedback):
     return {"message": f"Feedback received. Thank you, {msg.name}!"}
 ```
 
-### 2 С сохранением в db
+#### 2 С сохранением в db
 ```python
 from database import connection_on_db, add_query
 
@@ -168,7 +168,7 @@ async def get_feedbacks():
     return JSONResponse(content=data.fetchall(), status_code=200)
 ```
 
-### 3 My
+#### 3 My
 
 ```python
 fake_db = []
@@ -194,7 +194,7 @@ def get_records(user: str):
 
 ```
 
-# 3.1 
+# Task 3.1 
 ## Easy
 ### Задание по программированию
 
@@ -235,8 +235,8 @@ def get_records(user: str):
 }
 ```
 
-# Solutions
-### 1 MY
+##$ Solutions
+#### 1 MY
 
 ```python
 
@@ -253,7 +253,7 @@ def create_user(usr:UserCreate):
     return dict(zip(k,v))
 ```
 
-### 2 с проверкой на отрицательный int
+#### 2 с проверкой на отрицательный int
 ```python
 #models
 from pydantic import BaseModel, PositiveInt, Field, EmailStr
@@ -284,17 +284,14 @@ async def show_users():
 
 ```
 
-### 3
+#### 3
 ```python
 
 ```
 ![](/solution_images/3_1.png)
-### 4
-```python
 
-```
+# Task 3.1
 ## Hard
-
 Задача программирования повышенной сложности
 Ваша задача - создать приложение FastAPI, которое обрабатывает запросы, связанные с продуктами (товарами). Приложение должно иметь две конечные точки:
 
@@ -397,8 +394,8 @@ sample_products = [sample_product_1, sample_product_2, sample_product_3, sample_
 ```
 
 Обратите внимание, что если маршруты будут одинаковыми (например, /products/{product_id} и /products/search), то у нас второй маршрут будет не рабочим, тк слово search FastAPI будет пытаться привести к int, то есть обработать первый маршрут, и выдаст ошибку). Маршруты обрабатываются в порядке объявления хендлеров). 
-# Solutions 3.1
-### 1 My
+## Solutions 3.1
+#### 1 My
 ```python
 #models
 
