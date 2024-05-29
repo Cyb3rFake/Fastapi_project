@@ -1,2 +1,2 @@
-# Fastapi_project
+# Fastapi_studing project
 Fastapi_project
