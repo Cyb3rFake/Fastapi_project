@@ -1,22 +1,43 @@
-from pydantic import BaseModel
-from datetime import datetime
 import uvicorn
 from fastapi import FastAPI
+from typing import Union
 
-from models.models import User, Feedback, UserCreate
-
+import json
+from models.models import User, Feedback, UserCreate, Product
+from product_db import sample_products
 
 app = FastAPI(title='MyFukingApp')
 
-fake_db = []
+
+
+@app.get('/products/search/')
+def search_product(keyword: str,category: str | None = None, limit:int | None = 10)-> list[Product]:
+    res = []
+    for product in sample_products:
+        if category and (category in product.values()):
+            if  keyword in product.values():
+                res.append(product)
+                return product
+            else:
+                if limit:
+                    return [product for product in sample_products if product['category']==category][:limit]                
+                else:
+                    return [product for product in sample_products if product['category']==category]
+        elif keyword in product.values():
+            return product
+
+
+@app.get('/product/{product_id}')
+def get_product(product_id: int)-> Product:
+    res = list(product for product in sample_products if product['product_id']==product_id)[0]
+    return res
 
 
 @app.post('/create_user')
-def create_user(name:UserCreate,
-                email:UserCreate,
-                age:UserCreate,
-                is_subscribed: UserCreate):
-    return
+def create_user(usr:UserCreate):
+    k = ('name',"email","age","is_subscribed")
+    v = (usr.name,usr.email,usr.age,usr.is_subscribed)
+    return dict(zip(k,v))
     
 
 @app.post('/feedback')

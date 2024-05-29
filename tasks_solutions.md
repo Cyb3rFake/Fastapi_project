@@ -195,6 +195,7 @@ def get_records(user: str):
 ```
 
 # 3.1 
+## Easy
 ### Задание по программированию
 
 Ваша задача - создать конечную точку FastAPI, которая принимает POST-запрос с данными о пользователе/юзере в теле запроса. Пользовательские данные должны включать следующие поля:
@@ -233,3 +234,202 @@ def get_records(user: str):
     "is_subscribed": true
 }
 ```
+
+# Solutions
+### 1 MY
+
+```python
+
+class UserCreate(BaseModel):
+    name: str
+    email: str
+    age: int
+    is_subscribed: bool
+
+@app.post('/create_user')
+def create_user(usr:UserCreate):
+    k = ('name',"email","age","is_subscribed")
+    v = (usr.name,usr.email,usr.age,usr.is_subscribed)
+    return dict(zip(k,v))
+```
+
+### 2 с проверкой на отрицательный int
+```python
+#models
+from pydantic import BaseModel, PositiveInt, Field, EmailStr
+
+class UserCreate(BaseModel):
+    name: str
+    email: EmailStr
+    age: PositiveInt | None = Field(default=None, lt=130)
+    is_subscribed: bool = False
+
+#routes
+from fastapi import FastAPI
+from models import UserCreate
+
+
+app = FastAPI()
+users: list[UserCreate] = []
+
+@app.post("/create_user")
+async def create_user(new_user: UserCreate):
+    users.append(new_user)
+    return new_user
+
+@app.get("/showuser")
+async def show_users():
+    return {"users": users}
+
+
+```
+
+### 3
+```python
+
+```
+![](/solution_images/3_1.png)
+### 4
+```python
+
+```
+## Hard
+
+Задача программирования повышенной сложности
+Ваша задача - создать приложение FastAPI, которое обрабатывает запросы, связанные с продуктами (товарами). Приложение должно иметь две конечные точки:
+
+1. Конечная точка для получения информации о продукте:
+
+   - Маршрут: `/product/{product_id}`
+
+   - Метод: GET
+
+   - Параметр пути:
+
+     - `product_id`: идентификатор продукта (целое число)
+
+   - Ответ: Возвращает объект JSON, содержащий информацию о продукте, основанную на предоставленном `product_id`.
+
+2. Конечная точка для поиска товаров:
+
+   - Маршрут: `/products/search`
+
+   - Метод: GET
+
+   - Параметры запроса:
+
+     - `keyword` (строка, обязательна): ключевое слово для поиска товаров.
+
+     - `category` (строка, необязательно): категория для фильтрации товаров.
+
+     - `limit` (целое число, необязательно): максимальное количество товаров для возврата (по умолчанию 10, если не указано иное).
+
+   - Ответ: Возвращает массив JSON, содержащий информацию о продукте, соответствующую критериям поиска.
+
+3. Для примера можете использовать следующие данные с целью последующего направления ответа:
+```json
+sample_product_1 = {
+    "product_id": 123,
+    "name": "Smartphone",
+    "category": "Electronics",
+    "price": 599.99
+}
+
+sample_product_2 = {
+    "product_id": 456,
+    "name": "Phone Case",
+    "category": "Accessories",
+    "price": 19.99
+}
+
+sample_product_3 = {
+    "product_id": 789,
+    "name": "Iphone",
+    "category": "Electronics",
+    "price": 1299.99
+}
+
+sample_product_4 = {
+    "product_id": 101,
+    "name": "Headphones",
+    "category": "Accessories",
+    "price": 99.99
+}
+
+sample_product_5 = {
+    "product_id": 202,
+    "name": "Smartwatch",
+    "category": "Electronics",
+    "price": 299.99
+}
+```
+
+sample_products = [sample_product_1, sample_product_2, sample_product_3, sample_product_4, sample_product_5]
+ 
+
+Пример:
+
+Запрос GET на `/product/123` должен возвращать:
+```json
+{
+    "product_id": 123,
+    "name": "Smartphone",
+    "category": "Electronics",
+    "price": 599.99
+}
+```
+В ответ на GET-запрос на `/products/search?keyword=phone&category=Electronics&limit=5` должно вернуться:
+```json
+[
+    {
+        "product_id": 123,
+        "name": "Smartphone",
+        "category": "Electronics",
+        "price": 599.99
+    },
+    {
+        "product_id": 789,
+        "name": "Iphone",
+        "category": "Electronics",
+        "price": 1299.99
+    },
+]
+```
+
+Обратите внимание, что если маршруты будут одинаковыми (например, /products/{product_id} и /products/search), то у нас второй маршрут будет не рабочим, тк слово search FastAPI будет пытаться привести к int, то есть обработать первый маршрут, и выдаст ошибку). Маршруты обрабатываются в порядке объявления хендлеров). 
+# Solutions 3.1
+### 1 My
+```python
+#models
+
+class Product(BaseModel):
+    product_id: int
+    name: str
+    category: str 
+    price: float
+
+
+#routes
+@app.get('/products/search/')
+def search_product(keyword: str,category: str | None = None, limit:int | None = 10)-> list[Product]:
+    res = []
+    for product in sample_products:
+        if category and (category in product.values()):
+            if  keyword in product.values():
+                res.append(product)
+                return product
+            else:
+                if limit:
+                    return [product for product in sample_products if product['category']==category][:limit]                
+                else:
+                    return [product for product in sample_products if product['category']==category]
+        elif keyword in product.values():
+            return product
+
+
+@app.get('/product/{product_id}')
+def get_product(product_id: int)-> Product:
+    res = list(product for product in sample_products if product['product_id']==product_id)[0]
+    return res
+```
+
