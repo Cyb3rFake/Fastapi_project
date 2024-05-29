@@ -20,11 +20,9 @@ async def login(usr: User, resp: Response):
         if usr.password == users[usr.username]['password']:
             users[usr.username]['token'] = str(hash(usr.password)).replace('-','')
             resp.set_cookie(key='session_token', value=users[usr.username]['token'])
-            # resp.status_code = HTTP_202_ACCEPTED
-            return {'result': f'autorization success, token:{users[usr.username]['token']}'}
-        # resp.status_code = HTTP_403_FORBIDDEN
+            return {'result': f'autorization success, token:{users[usr.username]['token']}'}    
         return {'result': f'Password is wrong'}
-    # resp.status_code = HTTP_404_NOT_FOUNDNOT
+    
     return {'result': f'User {usr.username} not found'}
 
 
@@ -34,8 +32,8 @@ async def user(token_id: str, resp: Response):
         # print(token_id,[_ for _ in v.values()])
         if str(token_id) in [_ for _ in v.values()]:
             return name,v
-
     return {'result': 'Have not permissions'}
+
 
 
 # @app.get('/products/search/')
