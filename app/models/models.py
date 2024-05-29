@@ -22,7 +22,12 @@ class Feedback(BaseModel):
 
 class User(BaseModel):
     name: str
-    age: int
+    password: str
+
+
+# class User(BaseModel):
+#     name: str
+#     age: int
 
 
 # class User_id(BaseModel):
