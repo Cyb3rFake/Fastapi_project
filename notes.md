@@ -299,5 +299,165 @@ async def logout_user(response: Response):
     response.delete_cookie("example_access_token")
 ```
 Под капотом, этот метод вызывает метод set_cookie и устанавливает атрибутам max_age и expires значение 0.
+# Работа с заголовками запросов HTTPS
 
-На этом данный урок заканчивается. Давайте продолжим наше путешествие по созданию мощных и безопасных API-интерфейсов с помощью FastAPI! 
+HTTP-заголовки - это метаданные, которые сопровождают HTTP-запрос или ответ. FastAPI позволяет вам получать доступ к заголовкам запросов и работать с ними для извлечения важной информации, такой как токены аутентификации, юзер-агенты и типы контента.
+
+FastAPI позволяет вам получать доступ к заголовкам запросов (headers) в рамках ваших функций маршрутизации. Вы можете использовать заголовки для предоставления дополнительной информации или данных авторизации вашему API.
+```python
+from typing import Annotated
+
+from fastapi import FastAPI, Header
+
+app = FastAPI()
+
+
+@app.get("/items/")
+async def read_items(user_agent: Annotated[str | None, Header()] = None):
+    return {"User-Agent": user_agent}
+```
+Разберём эту строчку: user_agent: Annotated[str | None, Header()] = None:
+
+user_agent - это имя заголовка, который мы ищем;
+при помощи Annotated мы задаём тип данных в заголовке (строка или None), соответственно другие типы не пройдут валидацию; 
+также мы аннотируем формат тем, что указываем, что ожидаем именно заголовок (при помощи нашего класса Header) - то есть с помощью Annotated можно аннотировать переменную чем-то другим, кроме ее типа (например, строкой документации, чтобы какой-то гипотетический инструмент мог использовать ее для автоматического создания документации) или в нашем случае - классом, то есть мы говорим что тип - это строка или None, с одной стороны, но и заголовок - с другой;
+в дополнение класс Header переводит наш snake_case у user_agent к формату заголовков ("User-Agent") - искать будет именно его;
+и последнее - мы задаём значение заголовка по-умолчанию (=None ), и если заголовок не поступит в запросе, то внутри функции переменная user_agent будет равна None...мы можем задать здесь любое другое значение по умолчанию, если захотим.
+
+## Автоматическое преобразование
+Класс заголовок (Header) обладает небольшой дополнительной функциональностью в дополнение к тому, что предоставляют Path, Query и Cookie.
+
+Большинство стандартных заголовков разделены символом "дефис", также известным как "символ минуса" (-).
+
+Но переменная, подобная user-agent, недопустима в Python.
+
+Таким образом, по умолчанию Header преобразует символы имен параметров из символа подчеркивания (_) в дефис (-) для извлечения и документирования заголовков.
+
+Кроме того, HTTP-заголовки не чувствительны к регистру, поэтому вы можете объявить их в стандартном стиле Python (также известном как "snake_case").
+
+Итак, вы можете использовать user_agent, как обычно, в коде Python, вместо того, чтобы использовать заглавные буквы как User_Agent или что-то подобное.
+
+Если по какой-либо причине вам необходимо отключить автоматическое преобразование подчеркиваний в дефисы, установите параметр convert_underscores заголовка значение False.
+
+## Повторяющиеся заголовки
+В FastAPI возможно получение повторяющихся заголовков. Это означает, что один и тот же заголовок содержит несколько значений.
+
+Вы можете определить эти случаи, используя список в объявлении типа. Вы получите все значения из дублирующегося заголовка в виде списка Python.
+
+Например, чтобы объявить заголовок X-Token, который может появляться более одного раза, вы можете написать:
+```python
+from typing import Annotated
+
+from fastapi import FastAPI, Header
+
+app = FastAPI()
+
+
+@app.get("/items/")
+async def read_items(x_token: Annotated[list[str] | None, Header()] = None):
+    return {"X-Token values": x_token}
+
+```
+Если вы взаимодействуете с этой операцией path, отправляя два HTTP-заголовка, таких как:
+```
+X-Token: foo
+X-Token: bar
+```
+Ответ был бы таким:
+```
+{
+    "X-Token values": [
+        "bar",
+        "foo"
+    ]
+}
+```
+## Доступ к заголовкам запросов
+Для получения заголовков запроса применяется класс fastapi.Header. Например, получим заголовок User-Agent:
+```python
+from fastapi import FastAPI, Header
+ 
+app = FastAPI()
+ 
+@app.get("/")
+def root(user_agent: str = Header()):
+    return {"User-Agent": user_agent}
+```
+Для отправки заголовка в конструктор класса Response или его наследников параметру headers передается словарь, где ключи представляют названия заголовков:
+```python
+from fastapi import FastAPI, Response
+ 
+app = FastAPI()
+ 
+@app.get("/")
+def root():
+    data = "Hello from here"
+    return Response(content=data, media_type="text/plain", headers={"Secret-Code" : "123459"})
+```
+Также можно задать заголовки с помощью атрибута headers, который есть у класса Response и его наследников. Данный атрибут фактически представляет словарь, где ключи - названия заголовков:
+
+```python
+from fastapi import FastAPI, Response
+
+app = FastAPI()
+
+@app.get("/")
+def root(response: Response):
+    response.headers["Secret-Code"] = "123459"
+    return {"message": "Hello from my api"}
+```
+# Реализация базовой аутентификации в FastAPI
+Чтобы реализовать базовую аутентификацию в FastAPI, нам необходимо выполнить следующие действия:
+
+#### Шаг 1: Импорт зависимостей
+```python
+from fastapi import FastAPI, Depends, status, HTTPException
+from pydantic import BaseModel
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+```
+#### 2: Создайте приложение FastAPI и экземпляр 
+
+```python
+HTTPBasic
+app = FastAPI()
+security = HTTPBasic()
+```
+#### Шаг 3: Создайте модель пользователя
+```python
+class User(BaseModel):
+    username: str
+    password: str
+```
+#### добавим симуляцию базы данных в виде массива объектов юзеров
+```python
+USER_DATA = [User(**{"username": "user1", "password": "pass1"}), User(**{"username": "user2", "password": "pass2"})]
+```
+#### Шаг 4: Определите функцию аутентификации
+
+def authenticate_user(credentials: HTTPBasicCredentials = Depends(security)):
+    user = get_user_from_db(credentials.username)
+    if user is None or user.password != credentials.password:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    return user
+
+#### Шаг 5: Задайте логику получения информации о пользователе и его пароле
+
+симуляционный пример:
+```python
+def get_user_from_db(username: str):
+    for user in USER_DATA:
+        if user.username == username:
+            return user
+    return None
+```
+Шаг 6: Защитите конечные точки с помощью аутентификации
+
+```python
+@app.get("/protected_resource/")
+def get_protected_resource(user: User = Depends(authenticate_user)):
+    return {"message": "You have access to the protected resource!", "user_info": user}
+```
+`Depends(authenticate_user)` - это пример внедрения зависимости (dependency injection), которые мы будем разбирать позднее в этом курсе. Для любознательных - можете заглянуть в комментарии, перескочить в урок 8.1 (8.1.2-8.1.3), или можете "поверить на слово", потом все встанет на свои места :)
+
+В приведенном выше коде мы сначала импортируем необходимые зависимости, включая `FastAPI`, `HTTPBasic` и `HTTPBasicCredentials`. Затем мы создаем экземпляр `HTTPBasic` для использования для аутентификации. Мы определяем функцию `authenticate_user`, которая принимает `HTTPBasicCredentials` в качестве параметра, полученного из запроса. Эта функция проверяет учетные данные пользователя по базе данных и выдает ошибку HTTP 401 Unauthorized, если они недействительны.
+Наконец, мы защищаем нашу конечную точку, добавляя функцию `authenticate_user` в качестве зависимости. Когда клиент отправляет запрос к конечной точке `/protected_resource/`, FastAPI сначала запустит функцию `authenticate_user` для проверки учетных данных пользователя, прежде чем выполнять основную функцию конечной точки.

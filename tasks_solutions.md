@@ -462,3 +462,181 @@ session_token: "invalid_token_value"
 Ответ должен возвращать сообщение об ошибке с кодом состояния 401 или сообщение {"message": "Unauthorized"}.
 
 Пожалуйста, протестируйте свою реализацию с помощью таких инструментов, как "curl", Postman или любой другой клиент API, чтобы проверить функциональность аутентификации на основе файлов cookie.
+
+# Task 3.3
+## Задача на программирование
+Ваша задача - создать приложение FastAPI, которое демонстрирует, как работать с заголовками запросов. Выполните следующие действия, чтобы выполнить задачу:
+
+1. Создайте конечную точку в `/headers`, которая принимает запросы GET.
+
+2. В конечной точке `/headers` извлеките следующие заголовки из входящего запроса:
+
+   a) "User-agent": строка пользовательского агента браузера клиента или пользовательского агента пользователя.
+
+   б) "Accept-Language": предпочтительный язык клиента для согласования содержимого.
+
+3. Верните ответ в формате JSON, содержащий извлеченные заголовки и их значения.
+
+Пример:
+
+GET-запрос к `/headers` со следующими заголовками:
+
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36
+Accept-Language: en-US,en;q=0.9,es;q=0.8
+Ответ JSON должен быть таким:
+
+{
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9,es;q=0.8"
+}
+4. Реализуйте обработку ошибок, чтобы вернуть соответствующий ответ с кодом состояния 400 (неверный запрос), если необходимые заголовки отсутствуют.
+
+5. Необязательно: добавьте проверку, чтобы проверить, имеет ли заголовок "Accept-Language" правильный формат (например, "en-US,en;q=0.9,es;q=0.8"). Если он не в правильном формате, верните ответ об ошибке с кодом состояния 400 (неверный запрос).
+
+Подсказка: Используйте атрибут `request.headers` для доступа к заголовкам входящих запросов.
+
+Протестируйте свою реализацию с помощью таких инструментов, как `curl`, Postman или любой другой клиент API, чтобы убедиться, что конечная точка `/headers` возвращает ожидаемый ответ JSON, содержащий извлеченные заголовки и значения. Кроме того, протестируйте обработку ошибок, отправляя запросы без требуемых заголовков или с неправильными форматами заголовков "Accept-Language".
+
+## Solutions
+### 1 MY
+```python
+@app.get("/headers")
+async def get_headers(request: Request):
+    user_agent = request.headers.get("user-agent")
+    accept_language = request.headers.get("accept-language")
+    
+    # user_agent = request.headres.get("user-agent")
+    # accept_language = request.headres.get("accept-language")
+
+    if user_agent is None or accept_language is None:
+        raise HTTPException(status_code=400, detail="Missing required headers")
+
+    response_data = {
+        "User-Agent": user_agent,
+        "Accept-Language": accept_language
+    }
+    print(response_data)
+    return response_data
+```
+# Task 4.1 Задача на программирование
+Реализуйте защищенную базовой аутентификацией конечную точку FastAPI `/login`, которая принимает запросы GET.
+
+1. Конечная точка должна аутентифицировать пользователя на основе предоставленных учетных данных.
+
+2. Используйте зависимость, чтобы проверить правильность имени пользователя и пароля.
+
+3. Если учетные данные неверны, верните сообщение HTTPExceptionс кодом состояния 401 (то же самое возвращается, если учетные данные не предоставлены).
+
+4. Если данные верны, верните секретное сообщение "You got my secret, welcome"
+
+5. Попробуйте сначала авторизоваться с неправильными данными, а потом введите корректные данные. Для получения такой возможности (повторно авторизоваться) изучите информацию про необходимость добавления заголовка WWW-Authenticateчтобы браузер снова отображал приглашение для входа в систему.
+## Solution
+### 1 MY
+```python
+security = HTTPBasic()
+USER_DATA = [User(**{"username": "user1", "password": "pass1"}), User(**{"username": "user2", "password": "pass2"})]
+def get_user_from_db(username: str):
+    for user in USER_DATA:
+        if user.username == username:
+            return user
+    return None
+
+
+@app.get('/login')
+def authenticate_user(credentials: HTTPBasicCredentials = Depends(security)):
+    user = get_user_from_db(credentials.username)
+    if user is None or user.password!=credentials.password:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    return {"You got my secret, welcome"}
+
+```
+### 2
+```python
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.security import HTTPBasicCredentials, HTTPBasic
+import pydantic
+
+class User(pydantic.BaseModel):
+    username: str
+    password: str
+
+user_db = [User(username='user1', password='123'), User(username='user2', password='456')]
+print(f"{user_db=}")
+
+app = FastAPI()
+security = HTTPBasic()
+
+def get_user_from_db(username: str) -> User | None:
+    for user in user_db:
+        print(f"get_user_from_db: {user.username=}, {username=}")
+        if user.username == username:
+            print(f"get_user_from_db: {user} is verified")
+            return user
+    return None
+
+
+def auth_user(credentials: HTTPBasicCredentials = Depends(security)) -> User:
+    user = get_user_from_db(credentials.username)
+    print(f"{credentials=}, {user=}")
+    if user is None:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Basic"},
+            )
+    print(f"auth_user: return {user!r}")
+    return user
+
+
+@app.get('/login')
+def get_login(user: User = Depends(auth_user)):
+    return "You got my secret, welcome"
+
+
+```
+### 3 через response.headers[""]
+
+```python
+from fastapi import FastAPI, Depends, status, HTTPException, Response
+from pydantic import BaseModel
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+
+app = FastAPI()
+security = HTTPBasic()
+
+
+class User(BaseModel):
+    username: str
+    password: str
+
+
+user_data = {
+    "user1": User(**{"username": "user1", "password": "pass1"}),
+    "user2": User(**{"username": "user2", "password": "pass2"})
+}
+
+
+def get_user(username: str) -> User | None:
+    if username in user_data:
+        return user_data[username]
+    return None
+
+
+def authenticate(credentials: HTTPBasicCredentials = Depends(security)) -> User:
+    user = get_user(credentials.username)
+    if user is None or user.password != credentials.password:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid credentials")
+    return user
+
+
+@app.get("/login")
+def login(user: User = Depends(authenticate)):
+    print(user)
+    response = Response(content='{"message": "You got my secret, welcome"}')
+    response.headers["WWW-Authenticate"] = "Basic, no-store"
+    response.status_code = status.HTTP_202_ACCEPTED
+    return response
+
+
+```

@@ -8,11 +8,7 @@ class Product(BaseModel):
     price: float
 
 
-class UserCreate(BaseModel):
-    name: str
-    email: str
-    age: int
-    is_subscribed: bool
+
 
 class Feedback(BaseModel):
     name: str
@@ -23,7 +19,7 @@ class Feedback(BaseModel):
 class User(BaseModel):
     username: str
     password: str
-    session_token: None
+    # session_token: None
 
 # class User(BaseModel):
 #     name: str
