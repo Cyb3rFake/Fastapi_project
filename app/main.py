@@ -8,7 +8,7 @@ import uuid
 from typing import Annotated
 from datetime import datetime
 from random import randrange
-from models.models import User, Feedback, UserCreate, Product
+from models.models import User, Feedback, Product
 from db import sample_products
 
 app = FastAPI(title='MyFukingApp')
