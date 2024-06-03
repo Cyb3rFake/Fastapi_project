@@ -1,8 +1,8 @@
 import uvicorn
 from fastapi import FastAPI, Cookie, Response, Request ,Header, HTTPException, status, Depends
 from fastapi.responses import JSONResponse, HTMLResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-import uuid
+from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2PasswordBearer,
+import uuid, jwt, base64
 
 
 from typing import Annotated
@@ -11,12 +11,27 @@ from random import randrange
 from models.models import User, Feedback, Product
 from db import sample_products
 
+
 app = FastAPI(title='MyFukingApp')
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
+
 
 users = {'Kenny': {'password': 'qwerty', 'token': None},
          'Abrams': {'password': 'ytrewq', 'token': None}}
 
+"""---------TASK 4.2----------"""
+SECRET_KEY = "mysecretkey"
+USER_DATA = [
+    {'username':'admin','password':'adm_pass'}
+]
+ALGORITHM = 'HS256'
 
+
+def create_gwt_token(data: dict):
+    return jwt.encode(data,SECRET_KEY,algorithm=ALGORITHM)
+
+def get_user_from_token(token: str = Depends[oauth2_scheme]):
+    payload = jwt.decode()
 
 
 """---------TASK 4.1----------"""
